@@ -50,9 +50,9 @@ class GameMenu:
         n = max(1, len(self.games))
         top = 140
         footer = 86
-        gap = 16
+        gap = 8
         avail = HEIGHT - top - footer
-        card_h = min(150, max(100, (avail - gap * (n - 1)) // n))
+        card_h = min(150, max(68, (avail - gap * (n - 1)) // n))
         for i, item in enumerate(self.games):
             y0 = top + i * (card_h + gap)
             y1 = y0 + card_h
@@ -66,8 +66,10 @@ class GameMenu:
             title_c = C_TITLE if enabled else C_MUTED
             sub_c = C_TEXT if enabled else (90, 100, 120)
             status = "READY" if enabled else "LOCKED"
-            blit_text(canvas, 90, y0 + 22, item["title"], title_c, scale=5, gap=2)
-            blit_text(canvas, 90, y0 + card_h - 42, item["subtitle"], sub_c, scale=3, gap=1)
+            title_scale = 4 if card_h < 100 else 5
+            blit_text(canvas, 90, y0 + max(10, card_h // 5), item["title"], title_c, scale=title_scale, gap=2)
+            if card_h >= 88:
+                blit_text(canvas, 90, y0 + card_h - 32, item["subtitle"], sub_c, scale=2, gap=1)
             blit_text(canvas, 980, y0 + card_h // 2 - 12, status, C_ACCENT if enabled else C_MUTED, scale=3, gap=1)
 
         help_y = HEIGHT - 70
