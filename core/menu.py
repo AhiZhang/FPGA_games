@@ -47,9 +47,12 @@ class GameMenu:
         blit_text(canvas, 40, 28, "FPGA GAMES", C_TITLE, scale=7, gap=2)
         blit_text(canvas, 40, 82, "SELECT A GAME", C_MUTED, scale=2, gap=1)
 
-        top = 150
-        card_h = 150
-        gap = 24
+        n = max(1, len(self.games))
+        top = 140
+        footer = 86
+        gap = 16
+        avail = HEIGHT - top - footer
+        card_h = min(150, max(100, (avail - gap * (n - 1)) // n))
         for i, item in enumerate(self.games):
             y0 = top + i * (card_h + gap)
             y1 = y0 + card_h
@@ -63,9 +66,9 @@ class GameMenu:
             title_c = C_TITLE if enabled else C_MUTED
             sub_c = C_TEXT if enabled else (90, 100, 120)
             status = "READY" if enabled else "LOCKED"
-            blit_text(canvas, 90, y0 + 36, item["title"], title_c, scale=6, gap=2)
-            blit_text(canvas, 90, y0 + 96, item["subtitle"], sub_c, scale=3, gap=1)
-            blit_text(canvas, 980, y0 + 60, status, C_ACCENT if enabled else C_MUTED, scale=3, gap=1)
+            blit_text(canvas, 90, y0 + 22, item["title"], title_c, scale=5, gap=2)
+            blit_text(canvas, 90, y0 + card_h - 42, item["subtitle"], sub_c, scale=3, gap=1)
+            blit_text(canvas, 980, y0 + card_h // 2 - 12, status, C_ACCENT if enabled else C_MUTED, scale=3, gap=1)
 
         help_y = HEIGHT - 70
         fill_rect(canvas, 0, help_y - 16, WIDTH, HEIGHT, C_PANEL)

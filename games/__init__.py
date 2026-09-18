@@ -1,4 +1,5 @@
 from games.snake.scene import SnakeScene
+from games.tetris.scene import TetrisScene
 
 GAMES = (
     {
@@ -7,6 +8,13 @@ GAMES = (
         "subtitle": "EAT GROW DONT CRASH",
         "enabled": True,
         "factory": SnakeScene,
+    },
+    {
+        "id": "tetris",
+        "title": "TETRIS",
+        "subtitle": "STACK AND CLEAR",
+        "enabled": True,
+        "factory": TetrisScene,
     },
     {
         "id": "soon",

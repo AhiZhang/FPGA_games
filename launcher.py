@@ -67,6 +67,9 @@ def main() -> int:
                     log("launcher: game buttons %s" % (edges,))
                     scene.handle_buttons(edges)
                     dirty = True
+                if hasattr(scene, "handle_held"):
+                    if scene.handle_held(buttons._stable, now):
+                        dirty = True
                 if scene.wants_menu():
                     log("launcher: back to menu")
                     scene = None
@@ -75,8 +78,9 @@ def main() -> int:
                 elif now - last_tick >= getattr(scene, "tick_s", 0.16):
                     last_tick = now
                     if scene.needs_tick():
-                        scene.tick()
-                        dirty = True
+                        changed = scene.tick()
+                        if changed or changed is None:
+                            dirty = True
 
             if dirty:
                 if scene is None:

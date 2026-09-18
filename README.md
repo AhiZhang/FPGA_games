@@ -2,7 +2,7 @@
 
 PYNQ-Z2 上的 HDMI 小游戏集合。板上进程先进入 **选游戏菜单**，再用 BTN0–3 进入具体游戏。画面由 Python 画到 base overlay 的 HDMI 帧缓冲（1280×720），不经过 Jupyter。
 
-当前可玩：**贪吃蛇（SNAKE）**。新游戏按同一套 scene 接口往 `games/` 里加即可。
+当前可玩：**贪吃蛇（SNAKE）**、**俄罗斯方块（TETRIS）**。
 
 ## 硬件
 
@@ -14,7 +14,7 @@ PYNQ-Z2 上的 HDMI 小游戏集合。板上进程先进入 **选游戏菜单**�
 
 ## 选游戏菜单
 
-HDMI 列出游戏卡片。当前 **SNAKE** 为 READY，**MORE SOON** 为占位（LOCKED）。
+HDMI 列出游戏卡片：**SNAKE**、**TETRIS** 为 READY，**MORE SOON** 为占位（LOCKED）。
 
 | 按键 | 菜单 |
 |------|------|
@@ -39,6 +39,21 @@ HDMI 列出游戏卡片。当前 **SNAKE** 为 READY，**MORE SOON** 为占位�
 - 吃到食物变长、分数 +1；撞墙或撞自己结束
 - Game Over：BTN0 回菜单，其它键重开
 
+## 俄罗斯方块
+
+代码在 `games/tetris/`。10×20 场地，七种方块、7-bag、幽灵块预览，每消 10 行升一级。
+
+| 按键 | 动作 |
+|------|------|
+| BTN0 | 左移（按住连移） |
+| BTN3 | 右移（按住连移） |
+| BTN2 | 旋转（点按一次转一次） |
+| BTN1 | 软降（按住加速下落） |
+
+- 开局按任意键开始
+- 消 1/2/3/4 行分别得 100/300/500/800 × 当前等级；软降每格 +1
+- Game Over：BTN0 回菜单，其它键重开
+
 ## 目录
 
 ```
@@ -47,6 +62,7 @@ start_launcher.sh     板上后台启动
 start_snake.sh        兼容旧命令，转到菜单
 core/                 HDMI、按键消抖、画字、菜单
 games/snake/          贪吃蛇
+games/tetris/         俄罗斯方块
 _pynq_ctl.py          主机上传/启动/看日志
 ```
 
