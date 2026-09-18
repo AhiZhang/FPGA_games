@@ -1,4 +1,5 @@
 from games.breakout.scene import BreakoutScene
+from games.flappy.scene import FlappyScene
 from games.snake.scene import SnakeScene
 from games.tetris.scene import TetrisScene
 
@@ -23,5 +24,12 @@ GAMES = (
         "subtitle": "HIT ALL THE BRICKS",
         "enabled": True,
         "factory": BreakoutScene,
+    },
+    {
+        "id": "flappy",
+        "title": "FLAPPY",
+        "subtitle": "FLAP THROUGH PIPES",
+        "enabled": True,
+        "factory": FlappyScene,
     },
 )
