@@ -1,3 +1,4 @@
+from games.breakout.scene import BreakoutScene
 from games.snake.scene import SnakeScene
 from games.tetris.scene import TetrisScene
 
@@ -17,10 +18,10 @@ GAMES = (
         "factory": TetrisScene,
     },
     {
-        "id": "soon",
-        "title": "MORE SOON",
-        "subtitle": "NEXT GAME TBD",
-        "enabled": False,
-        "factory": None,
+        "id": "breakout",
+        "title": "BREAKOUT",
+        "subtitle": "HIT ALL THE BRICKS",
+        "enabled": True,
+        "factory": BreakoutScene,
     },
 )
