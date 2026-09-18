@@ -1,6 +1,8 @@
 # FPGA_games
 
-PYNQ-Z2 HDMI 小游戏集合。开机后先进入 **选游戏菜单**，再用板上 BTN0–3 进入具体游戏。画面画到 base overlay 的 HDMI 帧缓冲，不经过 Jupyter。
+PYNQ-Z2 上的 HDMI 小游戏集合。板上进程先进入 **选游戏菜单**，再用 BTN0–3 进入具体游戏。画面由 Python 画到 base overlay 的 HDMI 帧缓冲（1280×720），不经过 Jupyter。
+
+当前可玩：**贪吃蛇（SNAKE）**。新游戏按同一套 scene 接口往 `games/` 里加即可。
 
 ## 硬件
 
@@ -12,19 +14,19 @@ PYNQ-Z2 HDMI 小游戏集合。开机后先进入 **选游戏菜单**，再用�
 
 ## 选游戏菜单
 
-HDMI 上显示游戏列表（当前可玩 **SNAKE**，另有灰色 **MORE SOON** 占位）。
+HDMI 列出游戏卡片。当前 **SNAKE** 为 READY，**MORE SOON** 为占位（LOCKED）。
 
 | 按键 | 菜单 |
 |------|------|
 | BTN2 | 上一条 |
 | BTN1 | 下一条 |
-| BTN3 / BTN0 | 开始当前项（未开放的项目会提示 NOT READY） |
+| BTN3 / BTN0 | 开始当前项（未开放会提示 NOT READY） |
 
-从游戏返回菜单：贪吃蛇 **Game Over** 后按 **BTN0**。
+约定：各游戏 **Game Over** 后按 **BTN0** 返回菜单。
 
 ## 贪吃蛇
 
-归档在 `games/snake/`。进入后：
+代码在 `games/snake/`。
 
 | 按键 | 方向 |
 |------|------|
@@ -44,7 +46,7 @@ launcher.py           HDMI 菜单入口
 start_launcher.sh     板上后台启动
 start_snake.sh        兼容旧命令，转到菜单
 core/                 HDMI、按键消抖、画字、菜单
-games/snake/          已归档的贪吃蛇
+games/snake/          贪吃蛇
 _pynq_ctl.py          主机上传/启动/看日志
 ```
 
@@ -52,7 +54,7 @@ _pynq_ctl.py          主机上传/启动/看日志
 
 ## 启动
 
-板端 Python：`/usr/local/share/pynq-venv/bin/python3`。启动前会停掉 Jupyter 和旧的 `recognize.py` / 旧贪吃蛇进程，避免抢 HDMI。
+板端 Python：`/usr/local/share/pynq-venv/bin/python3`。启动前会停掉 Jupyter、旧的 `recognize.py` 和上一局游戏进程，避免抢 HDMI。
 
 ```bash
 sudo bash /home/xilinx/fpga_games/start_launcher.sh
@@ -75,10 +77,10 @@ python _pynq_ctl.py log
 
 ## 加新游戏
 
-1. 在 `games/<name>/` 实现一个 scene：`handle_buttons` / `tick` / `draw` / `wants_menu`
+1. 在 `games/<name>/` 实现 scene：`handle_buttons` / `tick` / `draw` / `wants_menu`（可选 `handle_held`、`tick_s`、`needs_tick`）
 2. 在 `games/__init__.py` 的 `GAMES` 里登记 `title`、`factory`、`enabled`
 3. 菜单会自动列出
 
 ## Git
 
-重要改动节点先 `git pull` 再改，完成后再提交。
+重要节点先 `git pull`，改完再提交并同步远程。
