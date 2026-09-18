@@ -1,7 +1,7 @@
 """HDMI Tetris.
 
 BTN0 left, BTN3 right, BTN2 rotate, BTN1 soft drop.
-Hold left/right/down to repeat. Rotate is edge-only.
+Each press moves one cell or rotates once; holding does not repeat.
 Game over: BTN0 menu, other buttons restart.
 """
 from __future__ import annotations
@@ -19,10 +19,6 @@ WELL_W = COLS * CELL
 WELL_H = ROWS * CELL
 WELL_X = 80
 WELL_Y = 100
-
-DAS_DELAY = 0.22
-DAS_REPEAT = 0.07
-SOFT_REPEAT = 0.05
 
 C_BG = (8, 12, 24)
 C_PANEL = (18, 28, 44)
@@ -228,8 +224,6 @@ class TetrisScene:
         self.game = TetrisGame()
         self._exit_menu = False
         self._last_grav = time.time()
-        self._hold_from = [None, None, None, None]
-        self._last_repeat = [0.0, 0.0, 0.0, 0.0]
 
     def handle_buttons(self, edges):
         now = time.time()
@@ -246,9 +240,8 @@ class TetrisScene:
             self.game.start()
             self._last_grav = now
             return
+        # One cell / one rotation per press; holding must not slide extra cells.
         for i in edges:
-            self._hold_from[i] = now
-            self._last_repeat[i] = now
             if i == 0:
                 self.game.move(-1, 0)
             elif i == 3:
@@ -258,32 +251,6 @@ class TetrisScene:
                 self._last_grav = now
             elif i == 2:
                 self.game.rotate()
-
-    def handle_held(self, stable, now):
-        changed = False
-        for i in range(4):
-            if not stable[i]:
-                self._hold_from[i] = None
-        if not self.game.started or not self.game.alive:
-            return False
-        # Rotate does not repeat.
-        for i, dx, dy, delay, repeat in (
-            (0, -1, 0, DAS_DELAY, DAS_REPEAT),
-            (3, 1, 0, DAS_DELAY, DAS_REPEAT),
-            (1, 0, 1, 0.12, SOFT_REPEAT),
-        ):
-            if not stable[i] or self._hold_from[i] is None:
-                continue
-            if now - self._hold_from[i] < delay:
-                continue
-            if now - self._last_repeat[i] < repeat:
-                continue
-            if self.game.move(dx, dy):
-                changed = True
-                self._last_repeat[i] = now
-                if dy:
-                    self._last_grav = now
-        return changed
 
     def wants_menu(self):
         return self._exit_menu
