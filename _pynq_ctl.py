@@ -11,6 +11,7 @@ HOST = "192.168.2.99"
 USER = "xilinx"
 PASSWORD = "xilinx"
 REMOTE_DIR = "/home/xilinx/fpga_games"
+SKIP_NAMES = {".git", "__pycache__", "_pynq_ctl.py"}
 
 
 def connect(timeout=15):
@@ -38,7 +39,6 @@ def run(ssh, cmd, timeout=30):
 
 
 def sudo_script(ssh, script, timeout=30):
-    # Avoid quoting hell: write a temp script then sudo bash it.
     remote = "/tmp/_pynq_ctl.sh"
     sftp = ssh.open_sftp()
     try:
@@ -75,6 +75,28 @@ def wait_online(seconds=90):
     return False
 
 
+def upload_tree(sftp, local_dir, remote_dir):
+    try:
+        sftp.mkdir(remote_dir)
+    except IOError:
+        pass
+    for name in sorted(os.listdir(local_dir)):
+        if name in SKIP_NAMES:
+            continue
+        if name.startswith(".") and name != ".gitignore":
+            continue
+        if name.endswith(".pyc"):
+            continue
+        local = os.path.join(local_dir, name)
+        remote = remote_dir + "/" + name
+        if os.path.isdir(local):
+            upload_tree(sftp, local, remote)
+        else:
+            sftp.put(local, remote)
+            sftp.chmod(remote, 0o755)
+            print("uploaded", remote)
+
+
 def main():
     action = sys.argv[1] if len(sys.argv) > 1 else "help"
     if action == "wait":
@@ -88,28 +110,19 @@ def main():
             local_dir = os.path.dirname(os.path.abspath(__file__))
             sftp = ssh.open_sftp()
             try:
-                try:
-                    sftp.mkdir(REMOTE_DIR)
-                except IOError:
-                    pass
-                for name in ("snake.py", "start_snake.sh"):
-                    local = os.path.join(local_dir, name)
-                    remote = REMOTE_DIR + "/" + name
-                    sftp.put(local, remote)
-                    sftp.chmod(remote, 0o755)
-                    print("uploaded", remote)
+                upload_tree(sftp, local_dir, REMOTE_DIR)
             finally:
                 sftp.close()
         elif action == "launch":
             script = r"""
-bash /home/xilinx/fpga_games/start_snake.sh
+bash /home/xilinx/fpga_games/start_launcher.sh
 echo LAUNCH_EXIT:$?
 echo ---pid---
-cat /tmp/snake.pid || true
+cat /tmp/fpga_games.pid || true
 echo ---log---
-cat /tmp/snake.log || true
+cat /tmp/fpga_games.log || true
 echo ---ps---
-ps aux | grep -E 'snake.py|start_snake' | grep -v grep || true
+ps aux | grep -E 'launcher.py|snake.py|start_launcher' | grep -v grep || true
 """
             code, out, err = sudo_script(ssh, script, timeout=25)
             sys.stdout.write(out)
@@ -119,7 +132,7 @@ ps aux | grep -E 'snake.py|start_snake' | grep -v grep || true
         elif action == "log":
             code, out, err = run(
                 ssh,
-                "echo '---pid---'; cat /tmp/snake.pid 2>/dev/null; echo; echo '---ps---'; ps aux | grep snake.py | grep -v grep || true; echo '---log---'; cat /tmp/snake.log 2>/dev/null",
+                "echo '---pid---'; cat /tmp/fpga_games.pid 2>/dev/null; echo; echo '---ps---'; ps aux | grep -E 'launcher.py|snake.py' | grep -v grep || true; echo '---log---'; cat /tmp/fpga_games.log 2>/dev/null",
                 timeout=20,
             )
             sys.stdout.write(out)

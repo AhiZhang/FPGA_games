@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.pyo
+.pynq_ctl.sh
+snake.log
+fpga_games.log

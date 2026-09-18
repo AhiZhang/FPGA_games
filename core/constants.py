@@ -1,0 +1,4 @@
+WIDTH = 1280
+HEIGHT = 720
+POLL_S = 0.005
+STABLE_N = 4  # ~20 ms debounce

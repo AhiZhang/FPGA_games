@@ -1,6 +1,6 @@
 # FPGA_games
 
-在 **PYNQ-Z2** 上用 **HDMI OUT** 和板上 **BTN0–3** 玩贪吃蛇。画面由 Python 画到 base overlay 的 HDMI 帧缓冲，不经过 Jupyter。
+PYNQ-Z2 HDMI 小游戏集合。开机后先进入 **选游戏菜单**，再用板上 BTN0–3 进入具体游戏。画面画到 base overlay 的 HDMI 帧缓冲，不经过 Jupyter。
 
 ## 硬件
 
@@ -10,7 +10,21 @@
 - HDMI OUT 接显示器
 - 用板上 4 个按键 BTN0–3（靠 HDMI 一侧）
 
-## 按键
+## 选游戏菜单
+
+HDMI 上显示游戏列表（当前可玩 **SNAKE**，另有灰色 **MORE SOON** 占位）。
+
+| 按键 | 菜单 |
+|------|------|
+| BTN2 | 上一条 |
+| BTN1 | 下一条 |
+| BTN3 / BTN0 | 开始当前项（未开放的项目会提示 NOT READY） |
+
+从游戏返回菜单：贪吃蛇 **Game Over** 后按 **BTN0**。
+
+## 贪吃蛇
+
+归档在 `games/snake/`。进入后：
 
 | 按键 | 方向 |
 |------|------|
@@ -19,45 +33,35 @@
 | BTN2 | 上 |
 | BTN3 | 右 |
 
-- 开局 / 结束后按任意键开始或重来
-- 按键有消抖；按住不会连跳方向
-- 每一拍最多改一次方向，不能 180° 掉头
+- 开局按任意方向键开始；按住不连跳；每一拍最多改一次方向；不能 180° 掉头
+- 吃到食物变长、分数 +1；撞墙或撞自己结束
+- Game Over：BTN0 回菜单，其它键重开
 
-## HDMI 画面
+## 目录
 
-- 输出 **1280×720** RGB
-- 顶部：`SNAKE`、分数、长度，以及按键提示
-- 场内：绿色蛇、红色食物、深色网格
-- 开局中间大字：`PRESS ANY BTN`
-- 吃到食物变长，分数 +1
-- 撞墙或撞到自己：`GAME OVER`，再按任意键重来
-
-## 仓库文件
-
-| 文件 | 作用 |
-|------|------|
-| `snake.py` | 游戏本体（板上用 PYNQ venv 跑） |
-| `start_snake.sh` | 板上启动脚本：停 Jupyter、后台拉起游戏 |
-| `_pynq_ctl.py` | 主机侧：上传、启动、看日志（需 paramiko） |
+```
+launcher.py           HDMI 菜单入口
+start_launcher.sh     板上后台启动
+start_snake.sh        兼容旧命令，转到菜单
+core/                 HDMI、按键消抖、画字、菜单
+games/snake/          已归档的贪吃蛇
+_pynq_ctl.py          主机上传/启动/看日志
+```
 
 板上路径：`/home/xilinx/fpga_games/`。
 
-## 在板上启动
+## 启动
 
-板端 Python：`/usr/local/share/pynq-venv/bin/python3`。启动前会停掉 Jupyter 和旧的 `recognize.py`，避免抢 HDMI。
+板端 Python：`/usr/local/share/pynq-venv/bin/python3`。启动前会停掉 Jupyter 和旧的 `recognize.py` / 旧贪吃蛇进程，避免抢 HDMI。
 
 ```bash
-# SSH 到板子后（需要 root）
-sudo bash /home/xilinx/fpga_games/start_snake.sh
+sudo bash /home/xilinx/fpga_games/start_launcher.sh
 ```
 
-进程用 `setsid` + `nohup` 挂到后台，SSH 断开也不停。
+- 日志：`/tmp/fpga_games.log`
+- PID：`/tmp/fpga_games.pid`
 
-- 运行日志：`/tmp/snake.log`
-- 持久副本：`/home/xilinx/fpga_games/snake.log`
-- PID：`/tmp/snake.pid`
-
-从主机部署并启动：
+从主机：
 
 ```bash
 python _pynq_ctl.py upload
@@ -65,20 +69,16 @@ python _pynq_ctl.py launch
 python _pynq_ctl.py log
 ```
 
-## Overlay 说明
+## Overlay
 
-板上 `/boot/boot.py` 开机已经加载过 **base overlay**。默认 **不再重新下载 bitstream**（`SNAKE_DOWNLOAD=0`），只复用当前 FPGA，避免整板复位。
+板上 `/boot/boot.py` 开机已加载 **base overlay**。默认不重新下载 bitstream（`FPGA_DOWNLOAD=0`），避免整板复位。启动脚本会 source `/etc/profile.d`（含 `XILINX_XRT=/usr`）。
 
-若必须重新烧 overlay：
+## 加新游戏
 
-```bash
-SNAKE_DOWNLOAD=1 sudo -E bash /home/xilinx/fpga_games/start_snake.sh
-```
-
-重下 overlay 时网口可能短暂掉线，属正常。若板子整机重启，继续用默认的复用方式。
-
-启动脚本会 source `/etc/profile.d`（含 `XILINX_XRT=/usr`），否则会出现 `No Devices Found`。
+1. 在 `games/<name>/` 实现一个 scene：`handle_buttons` / `tick` / `draw` / `wants_menu`
+2. 在 `games/__init__.py` 的 `GAMES` 里登记 `title`、`factory`、`enabled`
+3. 菜单会自动列出
 
 ## Git
 
-重要改动节点先 `git pull` 再改，完成后再提交。当前游戏已能在 HDMI 上玩。
+重要改动节点先 `git pull` 再改，完成后再提交。
