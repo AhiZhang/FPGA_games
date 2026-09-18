@@ -87,10 +87,21 @@ class BreakoutGame:
         if self.stuck:
             self.ball_x = self.paddle_x + PADDLE_W / 2
 
-    def step(self, dt):
-        if not self.alive or not self.started or self.stuck:
+    def step(self, dt, hold_left=False, hold_right=False):
+        if not self.alive or not self.started:
             return False
-        dt = min(dt, 0.04)
+        dt = min(max(dt, 0.0), 0.05)
+        moved = False
+        dx = 0.0
+        if hold_left:
+            dx -= 720.0 * dt
+        if hold_right:
+            dx += 720.0 * dt
+        if dx:
+            self.move_paddle(dx)
+            moved = True
+        if self.stuck:
+            return moved
         self.ball_x += self.vx * dt
         self.ball_y += self.vy * dt
         left, right = FIELD_X + BALL_R, FIELD_X + FIELD_W - BALL_R
@@ -158,7 +169,7 @@ class BreakoutScene:
         self.game = BreakoutGame()
         self._exit_menu = False
         self._last = time.time()
-        self._last_held = time.time()
+        self._hold = [0, 0, 0, 0]
 
     def handle_buttons(self, edges):
         if not edges:
@@ -172,37 +183,30 @@ class BreakoutScene:
             return
         if not self.game.started:
             self.game.started = True
+            self._last = time.time()
             return
+        if 0 in edges:
+            self.game.move_paddle(-56)
+        if 3 in edges:
+            self.game.move_paddle(56)
         if 1 in edges or 2 in edges:
             self.game.launch()
 
     def handle_held(self, stable, now):
-        if not self.game.started or not self.game.alive:
-            self._last_held = now
-            return False
-        dt = min(0.04, max(0.0, now - self._last_held))
-        self._last_held = now
-        dx = 0.0
-        if stable[0]:
-            dx -= 640.0 * dt
-        if stable[3]:
-            dx += 640.0 * dt
-        if dx == 0.0:
-            return False
-        self.game.move_paddle(dx)
-        return True
+        self._hold = list(stable)
+        return False
 
     def wants_menu(self):
         return self._exit_menu
 
     def needs_tick(self):
-        return self.game.started and self.game.alive and not self.game.stuck
+        return self.game.started and self.game.alive
 
     def tick(self):
         now = time.time()
         dt = now - self._last
         self._last = now
-        return self.game.step(dt)
+        return self.game.step(dt, hold_left=bool(self._hold[0]), hold_right=bool(self._hold[3]))
 
     def draw(self, canvas):
         g = self.game
