@@ -48,11 +48,12 @@ class FlappyGame:
 
     def flap(self):
         if not self.alive:
-            return
+            return False
         if not self.started:
             self.started = True
             self._spawn_t = 0.0
-        self.vy = -430.0
+        self.vy = -580.0
+        return True
 
     def _spawn_pipe(self):
         gap_y = random.randint(HEADER + 90, HEIGHT - GROUND_H - GAP - 50)
@@ -61,9 +62,19 @@ class FlappyGame:
     def step(self, dt):
         if not self.alive or not self.started:
             return False
-        dt = min(dt, 0.04)
-        self.vy += 1450.0 * dt
+        dt = min(max(dt, 0.0), 0.033)
+        self.vy += 1250.0 * dt
         self.y += self.vy * dt
+        min_y = float(HEADER + 8)
+        max_y = float(HEIGHT - GROUND_H - BIRD_H)
+        if self.y < min_y:
+            self.y = min_y
+            self.vy = max(self.vy, 0.0)
+        if self.y > max_y:
+            self.y = max_y
+            self.alive = False
+            return True
+
         self._spawn_t += dt
         if self._spawn_t >= 1.45:
             self._spawn_t = 0.0
@@ -75,10 +86,6 @@ class FlappyGame:
 
         bird_top = self.y
         bird_bot = self.y + BIRD_H
-        if bird_top < HEADER + 8 or bird_bot > HEIGHT - GROUND_H:
-            self.alive = False
-            return True
-
         bx0, bx1 = BIRD_X, BIRD_X + BIRD_W
         for p in self.pipes:
             px0, px1 = p["x"], p["x"] + PIPE_W
@@ -100,6 +107,11 @@ class FlappyScene:
         self.game = FlappyGame()
         self._exit_menu = False
         self._last = time.time()
+        self._prev_hold = None
+
+    def _flap_now(self):
+        self.game.flap()
+        self._last = time.time()
 
     def handle_buttons(self, edges):
         if not edges:
@@ -111,7 +123,22 @@ class FlappyScene:
             self.game.reset()
             self._last = time.time()
             return
-        self.game.flap()
+        self._flap_now()
+
+    def handle_held(self, stable, now):
+        # Ignore the menu-select hold so entering Flappy does not auto-start.
+        if self._prev_hold is None:
+            self._prev_hold = list(stable)
+            return False
+        rose = False
+        for i in range(4):
+            if stable[i] and not self._prev_hold[i]:
+                rose = True
+        self._prev_hold = list(stable)
+        if not rose or not self.game.alive:
+            return False
+        self._flap_now()
+        return True
 
     def wants_menu(self):
         return self._exit_menu
