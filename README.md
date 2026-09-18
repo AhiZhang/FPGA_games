@@ -2,7 +2,7 @@
 
 PYNQ-Z2 上的 HDMI 小游戏集合。板上进程先进入 **选游戏菜单**，再用 BTN0–3 进入具体游戏。画面由 Python 画到 base overlay 的 HDMI 帧缓冲（1280×720），不经过 Jupyter。
 
-当前可玩：**贪吃蛇（SNAKE）**、**俄罗斯方块（TETRIS）**。
+当前可玩：**SNAKE**、**TETRIS**、**BREAKOUT**、**FLAPPY**、**2048**。
 
 ## 硬件
 
@@ -14,55 +14,70 @@ PYNQ-Z2 上的 HDMI 小游戏集合。板上进程先进入 **选游戏菜单**�
 
 ## 选游戏菜单
 
-HDMI 列出游戏卡片：**SNAKE**、**TETRIS** 为 READY，**MORE SOON** 为占位（LOCKED）。
+HDMI 列出五张 READY 卡片。BTN2 上一条，BTN1 下一条，BTN3 / BTN0 进入。
 
-| 按键 | 菜单 |
-|------|------|
-| BTN2 | 上一条 |
-| BTN1 | 下一条 |
-| BTN3 / BTN0 | 开始当前项（未开放会提示 NOT READY） |
+约定：各游戏 **Game Over** 后按 **BTN0** 返回菜单，其它键重开。
 
-约定：各游戏 **Game Over** 后按 **BTN0** 返回菜单。
+## 贪吃蛇 `games/snake/`
 
-## 贪吃蛇
-
-代码在 `games/snake/`。
-
-| 按键 | 方向 |
+| 按键 | 动作 |
 |------|------|
 | BTN0 | 左 |
 | BTN1 | 下 |
 | BTN2 | 上 |
 | BTN3 | 右 |
 
-- 开局按任意方向键开始；按住不连跳；每一拍最多改一次方向；不能 180° 掉头
-- 吃到食物变长、分数 +1；撞墙或撞自己结束
-- Game Over：BTN0 回菜单，其它键重开
+开局按任意方向键开始；按住不连跳；每一拍最多改一次方向；不能 180° 掉头。吃到变长，撞墙或撞自己结束。
 
-## 俄罗斯方块
+## 俄罗斯方块 `games/tetris/`
 
-代码在 `games/tetris/`。10×20 场地，七种方块、7-bag、幽灵块预览，每消 10 行升一级。
+10×20 场地，7-bag、幽灵块，每消 10 行升一级。
 
 | 按键 | 动作 |
 |------|------|
 | BTN0 | 左移（按住连移） |
 | BTN3 | 右移（按住连移） |
-| BTN2 | 旋转（点按一次转一次） |
-| BTN1 | 软降（按住加速下落） |
+| BTN2 | 旋转（点按） |
+| BTN1 | 软降（按住加速） |
 
-- 开局按任意键开始
-- 消 1/2/3/4 行分别得 100/300/500/800 × 当前等级；软降每格 +1
-- Game Over：BTN0 回菜单，其它键重开
+消 1/2/3/4 行得 100/300/500/800 × 当前等级；软降每格 +1。
+
+## 打砖块 `games/breakout/`
+
+| 按键 | 动作 |
+|------|------|
+| BTN0 | 挡板左移（可按住） |
+| BTN3 | 挡板右移（可按住） |
+| BTN2 / BTN1 | 发球 |
+
+打完所有砖块获胜，球掉出屏幕扣一条命，三条命用完结束。
+
+## Flappy `games/flappy/`
+
+任意键拍翅膀穿过水管空隙。碰到水管、地面或顶边结束。分数为成功穿过的水管数。
+
+## 2048 `games/game2048/`
+
+| 按键 | 动作 |
+|------|------|
+| BTN0 | 左滑 |
+| BTN1 | 下滑 |
+| BTN2 | 上滑 |
+| BTN3 | 右滑 |
+
+每次按键滑动一格并合并相同数字。盘面无法再动即结束；合成 2048 会在顶栏提示。
 
 ## 目录
 
 ```
 launcher.py           HDMI 菜单入口
 start_launcher.sh     板上后台启动
-start_snake.sh        兼容旧命令，转到菜单
 core/                 HDMI、按键消抖、画字、菜单
 games/snake/          贪吃蛇
 games/tetris/         俄罗斯方块
+games/breakout/       打砖块
+games/flappy/         Flappy
+games/game2048/       2048
 _pynq_ctl.py          主机上传/启动/看日志
 ```
 
@@ -70,33 +85,18 @@ _pynq_ctl.py          主机上传/启动/看日志
 
 ## 启动
 
-板端 Python：`/usr/local/share/pynq-venv/bin/python3`。启动前会停掉 Jupyter、旧的 `recognize.py` 和上一局游戏进程，避免抢 HDMI。
-
 ```bash
 sudo bash /home/xilinx/fpga_games/start_launcher.sh
 ```
 
-- 日志：`/tmp/fpga_games.log`
-- PID：`/tmp/fpga_games.pid`
+日志 `/tmp/fpga_games.log`，PID `/tmp/fpga_games.pid`。
 
-从主机：
+主机：`python _pynq_ctl.py upload && python _pynq_ctl.py launch`
 
-```bash
-python _pynq_ctl.py upload
-python _pynq_ctl.py launch
-python _pynq_ctl.py log
-```
-
-## Overlay
-
-板上 `/boot/boot.py` 开机已加载 **base overlay**。默认不重新下载 bitstream（`FPGA_DOWNLOAD=0`），避免整板复位。启动脚本会 source `/etc/profile.d`（含 `XILINX_XRT=/usr`）。
+板上 `/boot/boot.py` 已加载 base overlay。默认 `FPGA_DOWNLOAD=0`，不重新烧 bitstream。
 
 ## 加新游戏
 
-1. 在 `games/<name>/` 实现 scene：`handle_buttons` / `tick` / `draw` / `wants_menu`（可选 `handle_held`、`tick_s`、`needs_tick`）
-2. 在 `games/__init__.py` 的 `GAMES` 里登记 `title`、`factory`、`enabled`
+1. 在 `games/<name>/` 实现 scene：`handle_buttons` / `tick` / `draw` / `wants_menu`
+2. 在 `games/__init__.py` 的 `GAMES` 里登记
 3. 菜单会自动列出
-
-## Git
-
-重要节点先 `git pull`，改完再提交并同步远程。
