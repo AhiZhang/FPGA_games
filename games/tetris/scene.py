@@ -1,6 +1,6 @@
 """HDMI Tetris.
 
-BTN0 left, BTN3 right, BTN2 rotate, BTN1 soft drop.
+BTN0 left, BTN3 right, BTN2 rotate, BTN1 hard drop.
 Each press moves one cell or rotates once; holding does not repeat.
 Game over: BTN0 menu, other buttons restart.
 """
@@ -199,6 +199,15 @@ class TetrisGame:
             gy += 1
         return gy
 
+    def hard_drop(self):
+        if not self.alive or not self.started or self.kind is None:
+            return False
+        gy = self.ghost_y()
+        self.score += (gy - self.y) * 2
+        self.y = gy
+        self._lock()
+        return True
+
     def _lock(self):
         if self.kind is None:
             return
@@ -247,7 +256,7 @@ class TetrisScene:
             elif i == 3:
                 self.game.move(1, 0)
             elif i == 1:
-                self.game.move(0, 1)
+                self.game.hard_drop()
                 self._last_grav = now
             elif i == 2:
                 self.game.rotate()
